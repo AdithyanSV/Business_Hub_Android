@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/product_card.dart';
 import '../../models/product.dart';
+import 'product_page.dart'; // Import the ProductDetailPage
 
 class CategoryPage extends StatelessWidget {
   final String categoryName;
@@ -103,6 +104,16 @@ class CategoryPage extends StatelessWidget {
                     return ProductCard(
                       title: product.title,
                       price: product.price,
+                                            productId: product.id,
+                      onTap: () {
+                        // Navigate to ProductDetailPage with the product ID
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProductDetailPage(productId: product.id),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
