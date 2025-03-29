@@ -1,10 +1,49 @@
 import 'package:flutter/material.dart';
+import '../../core/supabase_config.dart';
 import '../../widgets/auth_widgets.dart';
-import 'login_page.dart';
 import 'reset_password_page.dart';
 
-class ForgotPasswordPage extends StatelessWidget {
+class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
+
+  @override
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+}
+
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  final _emailController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendVerificationCode() async {
+    final email = _emailController.text.trim();
+
+    setState(() => _isLoading = true);
+
+    try {
+      await SupabaseConfig.sendPasswordResetCode(email);
+
+      // Navigate to reset page only after successful code sending
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordPage(email: email),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,64 +53,75 @@ class ForgotPasswordPage extends StatelessWidget {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Forgot Password Illustration
+            // Illustration
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.asset('assets/forgot_password.png', height: 150),
+              child: Image.asset(
+                'assets/forgot.png',
+                height: 150,
+                fit: BoxFit.contain,
+              ),
             ),
             const SizedBox(height: 20),
-            // Description Text
+            // Title
             const Text(
-              'Enter your email address and we\'ll send you a link to reset your password.',
-              textAlign: TextAlign.center,
+              'Forgot Password?',
               style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF1C1B1F),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
-            ),
-            const SizedBox(height: 20),
-            // Email Input Field
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'Enter your email',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Send Reset Link Button
-            ElevatedButton(
-              onPressed: () {
-                // Navigate to PasswordResetPage
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                backgroundColor: const Color(0xFF1C1B1F),
-                foregroundColor: const Color(0xFFEFF1F5),
-                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              child: const Text('Send Reset Link'),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
-            // Back to Login Button
+            // Description
+            const Text(
+              'Enter your email to receive a verification code',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            // Email Field
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                prefixIcon: const Icon(Icons.email),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: 20),
+            // Send Code Button
             ElevatedButton(
-              onPressed: () {
-                // Navigate back to login page
-                Navigator.pop(context);
-              },
+              onPressed: _isLoading ? null : _sendVerificationCode,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                backgroundColor: const Color(0xFFEFF1F5),
-                foregroundColor: const Color(0xFF1C1B1F),
-                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
               ),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Send Verification Code'),
+            ),
+            const SizedBox(height: 10),
+            // Back to Login
+            TextButton(
+              onPressed: () => Navigator.pop(context),
               child: const Text('Back to Login'),
             ),
           ],
