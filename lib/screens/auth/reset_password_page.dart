@@ -1,9 +1,98 @@
 import 'package:flutter/material.dart';
+import '../../core/supabase_config.dart';
 import '../../widgets/auth_widgets.dart';
 import 'login_page.dart';
 
-class ResetPasswordPage extends StatelessWidget {
-  const ResetPasswordPage({super.key});
+class ResetPasswordPage extends StatefulWidget {
+  final String email;
+
+  const ResetPasswordPage({super.key, required this.email});
+
+  @override
+  State<ResetPasswordPage> createState() => _ResetPasswordPageState();
+}
+
+class _ResetPasswordPageState extends State<ResetPasswordPage> {
+  final _codeController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _resetPassword() async {
+    final code = _codeController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (code.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please fill all fields';
+      });
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() {
+        _errorMessage = 'Passwords do not match';
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      setState(() {
+        _errorMessage = 'Password must be at least 6 characters';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await SupabaseConfig.verifyAndResetPassword(
+        email: widget.email,
+        code: code,
+        newPassword: password,
+      );
+
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password reset successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to reset password: ${e.toString()}';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,98 +102,118 @@ class ResetPasswordPage extends StatelessWidget {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Password Reset Illustration
+            // Illustration
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.asset('assets/reset_password.png', height: 150),
+              child: Image.asset(
+                'assets/reset.png',
+                height: 150,
+                fit: BoxFit.contain,
+              ),
             ),
             const SizedBox(height: 20),
-            // Description Text
+            // Title
             const Text(
-              'Enter your verification code and create a new password.',
-              textAlign: TextAlign.center,
+              'Reset Password',
               style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF1C1B1F),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            // Description
+            Text(
+              'Code sent to ${widget.email}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 20),
-            // Verification Code Input Field
+            // Verification Code Field
             TextField(
+              controller: _codeController,
               decoration: InputDecoration(
-                hintText: 'Enter verification code',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                labelText: 'Verification Code',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                prefixIcon: const Icon(Icons.lock_outline),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 15),
+            // New Password Field
+            TextField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: 'New Password',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
               ),
             ),
-            const SizedBox(height: 10),
-            // New Password Input Field
+            const SizedBox(height: 15),
+            // Confirm Password Field
             TextField(
-              obscureText: true,
+              controller: _confirmPasswordController,
+              obscureText: _obscureConfirmPassword,
               decoration: InputDecoration(
-                hintText: 'Enter new password',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                suffixIcon: const Icon(Icons.visibility),
+                labelText: 'Confirm Password',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirmPassword
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                    });
+                  },
+                ),
               ),
             ),
-            const SizedBox(height: 10),
-            // Confirm New Password Input Field
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                hintText: 'Confirm new password',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                suffixIcon: const Icon(Icons.visibility),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
               ),
-            ),
+            ],
             const SizedBox(height: 20),
-            // Reset Password Button
+            // Reset Button
             ElevatedButton(
-              onPressed: () {
-                // Navigate to LoginPage after successful password reset
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                  (route) => false,
-                );
-                
-                // Show success message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Password reset successful. Please login with your new credentials.'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
+              onPressed: _isLoading ? null : _resetPassword,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                backgroundColor: const Color(0xFF1C1B1F),
-                foregroundColor: const Color(0xFFEFF1F5),
-                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
               ),
-              child: const Text('Reset Password'),
-            ),
-            const SizedBox(height: 10),
-            // Resend Code Button
-            ElevatedButton(
-              onPressed: () {
-                // Show message for resending code
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Verification code has been resent to your email.'),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                backgroundColor: const Color(0xFFEFF1F5),
-                foregroundColor: const Color(0xFF1C1B1F),
-                textStyle: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              child: const Text('Resend Code'),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Reset Password'),
             ),
           ],
         ),
