@@ -10,23 +10,23 @@ class CartPage extends StatefulWidget {
 
 class _CartPageState extends State<CartPage> {
   late Cart cart;
-  
+
   @override
   void initState() {
     super.initState();
     cart = Cart.sampleCart;
   }
-  
+
   void updateQuantity(CartItem item, int change) {
     setState(() {
       item.quantity = (item.quantity + change).clamp(1, 10);
     });
   }
-  
+
   void checkout() {
     Navigator.pushNamed(context, '/checkout');
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,7 +73,7 @@ class _CartPageState extends State<CartPage> {
               ],
             ),
           ),
-          
+
           // Cart items
           Expanded(
             child: ListView.builder(
@@ -81,7 +81,8 @@ class _CartPageState extends State<CartPage> {
               itemBuilder: (context, index) {
                 final item = cart.items[index];
                 return Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 8.0, horizontal: 16.0),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -97,7 +98,7 @@ class _CartPageState extends State<CartPage> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      
+
                       // Product info
                       Expanded(
                         child: Column(
@@ -119,7 +120,7 @@ class _CartPageState extends State<CartPage> {
                           ],
                         ),
                       ),
-                      
+
                       // Quantity controls
                       Row(
                         children: [
@@ -130,10 +131,12 @@ class _CartPageState extends State<CartPage> {
                             padding: const EdgeInsets.all(8),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
                             child: Text(
                               '${item.quantity}',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
                           IconButton(
@@ -150,7 +153,7 @@ class _CartPageState extends State<CartPage> {
               },
             ),
           ),
-          
+
           // Checkout section
           Container(
             padding: const EdgeInsets.all(16.0),
@@ -209,3 +212,4 @@ class _CartPageState extends State<CartPage> {
     );
   }
 }
+//
